@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>deep-attr</title>
+  </head>
+  <body>
+    <script>
+      // cope with {{a.b.c}}
+      function getDeepAttr(obj, str) {
+        let path = str.split('.');
+        let res = obj;
+        let attr;
+        while (attr = path.shift()) {
+          res = res[attr];
+        }
+        return res;
+      }
+      console.log(getDeepAttr({
+        a: {
+          b: {
+            c: 'hxwnb'
+          }
+        }
+      }, 'a.b.c'));
+    </script>
+  </body>
+</html>
