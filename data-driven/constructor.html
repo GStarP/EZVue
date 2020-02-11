@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>constructor</title>
+  </head>
+  <body>
+    <div id="app">
+      <div></div>
+      <p>{{name}}: {{msg}}</p>
+    </div>
+    <script>
+      // define constructor to imitate Vue.js
+      function EZVue(options) {
+        // internal attr begin with _
+        // readonly attr begin with $
+        this._el = options.el;
+        this._data = options.data;
+
+        this._template = document.querySelector(this._el);
+        this._parent = this._template.parentNode;
+
+        this.render();
+      }
+
+      EZVue.prototype.render = function() {
+        this.parse();
+      }
+
+      // template + data => DOM element
+      EZVue.prototype.parse = function() {
+        let generatedNode = this._template.cloneNode(true);
+        parse(generatedNode, this._data);
+        this.update(generatedNode);
+      }
+
+      // DOM element => page
+      EZVue.prototype.update = function(generatedNode) {
+        this._parent.replaceChild(generatedNode, this._template);
+      }
+
+      let app = new EZVue({
+        el: '#app',
+        data: {
+          name: 'zzn',
+          msg: 'hxwnb'
+        }
+      });
+    </script>
+  </body>
+</html>
