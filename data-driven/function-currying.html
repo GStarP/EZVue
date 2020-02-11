@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>function-currying</title>
+  </head>
+  <body>
+    <div id="app">
+      <div class="war3">girlfriends</div>
+      <ul>
+        <li>{{gf1}}</li>
+        <li>{{gf2}}</li>
+      </ul>
+    </div>
+    <script>
+      /**
+       * why need curring?
+       * curring can use cache to improve performance
+       */
+
+      // curring
+      // in 1 attr, out a function
+
+      // in Vue.js, how to judge whether a tag is a HTML tag
+      let buildInTags = "div,span,img".split(',');
+      
+      function makeMap(tags) {
+        let set = {};
+        tags.forEach(tag => {
+          set[tag] = true;
+        });
+        return function(tagName) {
+          return !!set[tagName.toLowerCase()];
+        };
+      }
+      // only need 1 loop in makeMap
+      let isHTMLTag = makeMap(buildInTags);
+
+
+      // since parse template is costly
+      // we can use currying to cache AST
+      // everytime data changes, we only need to pass data to get the real DOM
+      // no need to parse template again
+
+      // same as v-dom.html
+      class VNode {
+        constructor(tag, data, value, type) {
+          this.tag = tag && tag.toLowerCase();
+          this.data = data;
+          this.value = value;
+          this.type = type;
+          this.children = [];
+        }
+
+        appendChild(vnode) {
+          this.children.push(vnode);
+        }
+      }
+      function createVNode(node) {
+        let vnode = null;
+        let type = node.nodeType;
+        // element node
+        if (type === 1) {
+          let vTag = node.nodeName;
+          let vData = {};
+          let attrs = node.attributes;
+          for (let i = 0; i < attrs.length; i++) {
+            vData[attrs[i].nodeName] = attrs[i].nodeValue;
+          }
+          vnode = new VNode(vTag, vData, undefined, type);
+
+          let childNodes = node.childNodes;
+          for (let i = 0; i < childNodes.length; i++) {
+            vnode.appendChild(createVNode(childNodes[i]));
+          }
+        // text node
+        } else if (type === 3) {
+          vnode = new VNode(undefined, undefined, node.nodeValue, type);
+        }
+        return vnode;
+      }
+      // same as deep-attr.html
+      function getDeepAttr(obj, str) {
+        let path = str.split('.');
+        let res = obj;
+        let attr;
+        while (attr = path.shift()) {
+          res = res[attr];
+        }
+        return res;
+      }
+      // data -> VNode
+      function parsev(vnode, data) {
+        let _tag = vnode.tag;
+        let _type = vnode.type;
+        let _data = vnode.data;
+        let _value = vnode.value;
+        let _children = vnode.children;
+
+        let _vnode = null;
+
+        if (_type === 3) {
+          let reg = /\{\{(.+?)\}\}/g;
+          _value = _value.replace(reg, (_, g1) => {
+            return getDeepAttr(data, g1.trim());
+          });
+          _vnode = new VNode(_tag, _data, _value, _type);
+        } else if (_type === 1) {
+          _vnode = new VNode(_tag, _data, _value, _type);
+          _children.forEach(subVnode => {
+            _vnode.appendChild(parsev(subVnode, data));
+          });
+        }
+
+        return _vnode;
+      }
+
+      function EZVue(options) {
+        this._el = options.el;
+        this._data = options.data;
+        this._template = document.querySelector(this._el);
+        
+        this.mount();
+      }
+
+      EZVue.prototype.mount = function() {
+        // Vue.js: can also pass by render function
+        this.render = this.createRenderFunc();
+        this.mountComponent();
+      };
+      EZVue.prototype.mountComponent = function() {
+        let mount = () => {
+          this.update(this.render())
+        }
+        // Vue.js: mount is also call by others
+        mount.call(this);
+      };
+      // render: AST + data => VNode
+      // use currying to create render() to cache AST
+      EZVue.prototype.createRenderFunc = function() {
+        let AST = createVNode(this._template);
+        return function render() {
+          let newVnode = parsev(AST, this._data);
+          console.log(newVnode);
+          return newVnode;
+        }
+      };
+      // update: VDOM => page
+      // diff algorithm here!
+      EZVue.prototype.update = function(vnode) {
+        // TODO
+      };
+
+      let app = new EZVue({
+        el: '#app',
+        data: {
+          gf1: 'zzn',
+          gf2: 'lxc'
+        }
+      });
+    </script>
+  </body>
+</html>
