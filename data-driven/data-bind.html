@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>data-bind</title>
+  </head>
+  <body>
+    <div id="app">
+      <div></div>
+      <p>{{name}}: {{msg}}</p>
+    </div>
+    <script>
+      /**
+       * How to bind data to <p>?
+       * 1. get template
+       * 2. get data
+       * 3. template + data => DOM element
+       * 4. mount the element to page
+       */
+       
+      // Vue.js: template is a String
+      // for simplicity, we use DOM element temporarily
+      let template = document.querySelector('#app');
+      // data is an Object, assume we have it
+      let data = {
+        name: 'zzn',
+        msg: 'hxwnb'
+      };
+
+      // Vue.js: DOM => String template => AST => VNode => real DOM
+      // we try to solve the problem by recursive
+      function parse(template, data) {
+        let childNodes = template.childNodes;
+        for (let i = 0; i < childNodes.length; i++) {
+          let type = childNodes[i].nodeType;
+          // text node
+          if (type === 3) {
+            let text = childNodes[i].nodeValue;
+            // use () to form a group to get value inside {{}}
+            let reg = /\{\{(.+?)\}\}/g;
+            // the nth arg is the content of nth group
+            // return value will replace {{...}}
+            childNodes[i].nodeValue = text.replace(reg, (_, g1) => {
+              let key = g1.trim();
+              return data[key];
+            });
+          // element node
+          } else if (type === 1) {
+            parse(childNodes[i], data);
+          }
+        }
+      }
+
+      // Vue.js: template String kept in memory consistently
+      // change copy, reserve template
+      let generatedNode = template.cloneNode(true);
+      parse(generatedNode, data);
+      // mount to page
+      template.parentNode.replaceChild(generatedNode, template);
+
+      console.log(template);
+      console.log(generatedNode);
+
+      /**
+       * fault from Vue.js
+       * 1. use real DOM instead of VDOM
+       * 2. only support {{attr}}, not consider {{obj.name}} or {{func()}}
+       * 3. not responsive
+       */
+    </script>
+  </body>
+</html>
